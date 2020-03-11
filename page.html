@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>page</title>
+        <link rel="stylesheet" href="main.css">
+        <script src="vue.js" type="text/javascript" charset="utf-8"></script>
+
+    </head>
+
+    <body>
+
+    <div class="header">
+
+        <div id="searchBox">
+            <img src = "logo.png" width = "100" height = "50"/>
+            <input class="input" type="text" maxlength="2048"  placeholder = "Enter keyword" >
+            <button class="searchButton" @click="searchFunc"> Search </button>
+         </div>
+
+
+        <script>
+            var mySearch = new Vue({
+            el: '#searchBox',
+            methods:{
+                searchFunc(){
+                    window.location.href='page.html';
+                    /*this.$router.go({path:'/page'}); */
+                }
+            }
+            })
+        
+        </script>
+    </div>
+
+    <div class="list">
+    
+        <div>Product Name</div>
+        <div>Condition</div>
+        <div>Start Price</div>
+        <div>Current Bid</div>
+        <div>End Date</div>
+        <div>Our Advice</div>
+        <div>Link</div>
+    
+    
+    </div>
+        
+</body>
+    
+</html>

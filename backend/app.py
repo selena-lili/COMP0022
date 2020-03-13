@@ -3,8 +3,11 @@ from ebaysdk.finding import Connection
 
 app = Flask(__name__)
 
+@app.route('/')
+def main_page():
+    return 'Hello World'
 
-@app.route('/search')
+@app.route('/search', methods=['GET', 'POST'])
 def search():
     api = Connection(config_file='ebay.yaml', siteid="EBAY-GB")
 

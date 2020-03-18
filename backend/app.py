@@ -3,6 +3,7 @@ from flask_mysqldb import MySQL
 import re
 import MySQLdb.cursors
 from ebaysdk.finding import Connection
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'COMP0022'
@@ -32,11 +33,11 @@ def login():
         password = request.form['password']
         # Check if account exists using MySQL
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM accounts WHERE username = %s AND password = %s', (username, password))
+        cursor.execute('SELECT * FROM accounts WHERE username = %s', [username])
         # Fetch one record and return result
         account = cursor.fetchone()
         # If account exists in accounts table in out database
-        if account:
+        if account and check_password_hash(account['password'], password):
             # Create session data, we can access this data in other routes
             session['loggedin'] = True
             session['id'] = account['id']
@@ -86,7 +87,7 @@ def register():
             msg = 'Please fill out the form!'
         else:
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
-            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s)', [username, password, email, phone, address, postcode, country])
+            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s)', [username, generate_password_hash(password), email, phone, address, postcode, country])
             mysql.connection.commit()
             return redirect(url_for('home'))
     elif request.method == 'POST':

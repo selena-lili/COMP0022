@@ -15,14 +15,14 @@ app.config['MYSQL_DB'] = 'COMP0022'
 
 # Intialize MySQL
 mysql = MySQL(app)
-@app.route('/')
-@app.route('/home')
-def home():
-    if 'loggedin' in session:
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
+def index():
+    '''if 'loggedin' in session:
         # User is loggedin show them the home page
-        return render_template('index.html', username=session['username'])
+        return render_template('index.html', username=session['username'])'''
     # User is not loggedin redirect to login page
-    return redirect(url_for('login'))
+    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -96,6 +96,22 @@ def register():
     # Show registration form with message (if any)
     return render_template('register.html', msg=msg)
 
+@app.route('/modify', methods=['GET', 'POST'])
+def modify():
+    msg = ''
+    if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form and 'phone' in request.form and 'address' in request.form and 'postcode' in request.form:
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        id = session['id']
+        username = request.form['username']
+        email = request.form['email']
+        phone = request.form['phone']
+        address = request.form['address']
+        postcode = request.form['postcode']
+        country = request.form['country']
+        password = request.form['password']
+        cursor.execute('UPDATE accounts SET password = %s WHERE id = %s', [generate_password_hash(password), id])
+
+
 @app.route('/logout')
 def logout():
     # Remove session data, this will log the user out
@@ -103,30 +119,31 @@ def logout():
    session.pop('id', None)
    session.pop('username', None)
    # Redirect to main page
-   return redirect(url_for('home'))
+   return redirect(url_for('index'))
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
-    api = Connection(config_file='ebay.yaml', siteid="EBAY-GB")
-
-    request = {
-        'keywords': 'rings',
-        'itemFilter': [
-            {'name': 'condition', 'value': 'new'}
-        ],
-        'paginationInput': {
-            'entriesPerPage': 10,
-            'pageNumber': 1
-        },
-        'sortOrder': 'PricePlusShippingLowest'
-    }
-
-    response = api.execute('findItemsByKeywords', request)
-
-    for item in response.reply.searchResult.item:
-        print(f"Title: {item.title}, Price: {item.sellingStatus.currentPrice.value}\n")
-
-    return 'Hello World!'
+    msg = ''
+    if request.method == 'POST' and 'search' in request.form:
+        search = request.form['search']
+        api = Connection(config_file='ebay.yaml', siteid="EBAY-GB")
+        requests = {
+            'keywords': search,
+            'itemFilter': [
+                {'name': 'condition', 'value': 'new'}
+            ],
+            'paginationInput': {
+                'entriesPerPage': 10,
+                'pageNumber': 1
+            },
+            'sortOrder': 'PricePlusShippingLowest'
+        }
+        response = api.execute('findItemsByKeywords', requests)
+        '''for item in response.reply.searchResult.item:
+            print(f"Title: {item.title}, Price: {item.sellingStatus.currentPrice.value}\n")'''
+        return render_template('search.html', response=response)
+    else:
+        return redirect(url_for('index'))
 
 @app.route('/profile')
 def profile():

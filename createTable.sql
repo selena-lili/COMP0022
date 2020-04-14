@@ -12,5 +12,3 @@ CREATE TABLE IF NOT EXISTS `accounts` (
   	`country` varchar(50) NOT NULL DEFAULT 'United Kingdom',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-
-INSERT INTO `accounts` (`id`, `username`, `password`, `email`, `phone`, `address`, `postcode`, `country`) VALUES (1, 'test', 'test', 'test@test.com', '07511111111', 'UCL', 'WC1E6BT', 'United Kingdom');

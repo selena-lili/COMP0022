@@ -1,0 +1,34 @@
+{% extends 'layout.html' %}
+{% block title %}
+    Ebay Auction Site - Main Page
+{% endblock %}
+{% block navigation %}
+        <ul class="navbar-nav1">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+            </li>
+        </ul>
+{% endblock %}
+{% block content %}
+    <div class="center card">
+        <div class="card-body">
+            <h5 class="card-title">Login</h5>
+            <form action="{{ url_for('login') }}" method="post">
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i>
+                </label>
+                <input class="form-control" type="text" name="username" placeholder="Username" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i>
+                </label>
+                <input class="form-control" type="password" name="password" placeholder="Password" id="password" required>
+                <div class="msg">{{ msg }}</div>
+            </div>
+                <input type="submit" class="btn btn-info" value="Login">
+            </form>
+        </div>
+    </div>
+{% endblock %}

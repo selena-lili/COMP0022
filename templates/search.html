@@ -13,16 +13,15 @@
             <div class="row">
                 <img src="{{ i.galleryURL }}" class="img-fluid col-2" />
                 <div class="col-10">
-                    <h3>
+                    <h5>
                         <a href="{{ i.viewItemURL }}">
                             {{ i.title }}
                         </a>
-                    </h3>
+                    </h5>
                     <p class="text-dark">Category: {{ i.primaryCategory.categoryName }}</p>
+                    <p class="text-dark">Price: £ {{ i.sellingStatus.currentPrice.value }}</p>
                 </div>
             </div>
-
-
         </div>
     {% endfor %}
 {% endblock %}

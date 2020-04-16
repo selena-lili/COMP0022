@@ -22,7 +22,24 @@
     <hr>
     </section>
     <section>
-        <h1 class="text-center">Feature Today</h1>
+        <h1 class="text-center">Most Watched Today</h1>
+        {% for i in response.reply.itemRecommendations.item %}
+            <div class="container">
+                <div class="row">
+                    <img src="{{ i.imageURL }}" class="img-fluid col-2" />
+                    <div class="col-10">
+                        <h3>
+                            <a href="{{ i.viewItemURL }}">
+                                {{ i.title }}
+                            </a>
+                        </h3>
+                        <p class="text-dark">Category: {{ i.primaryCategoryName }}</p>
+                        <p class="text-dark">Price: £ {{ i.buyItNowPrice.value }}</p>
+                        <p class="text-dark">Watch Count: {{ i.watchCount }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
     <hr>
     </section>
 {% endblock %}

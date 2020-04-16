@@ -298,6 +298,16 @@
                 </select>
                     <div class="msg">{{ msg }}</div>
                     </div>
+                    <div class="form-group">
+                        <label for="interest">
+                            <i class="fas fa-user"></i>
+                        </label>
+                        <select id="interest" name="interest" class="form-control">
+                            {% for i in response %}
+                                <option value="{{ i['categoryName'] }}">{{ i['categoryName'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <input class="btn btn-outline-info" type="submit" value="Register">
                 </form>
             </div>

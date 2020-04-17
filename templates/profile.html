@@ -17,6 +17,14 @@
 {% endblock %}
 
 {% block content %}
+    <section>
+        <h1 class="text-center">Search Your Interest!</h1>
+        <form class="form-inline center" method="post" action="{{ url_for('search_logged') }}">
+            <input class="form-control mr-sm-8" type="search" placeholder="Search" aria-label="Search" name="search" required>
+            <button class="btn btn-outline-info my-2 my-sm-0" type="submit">Search</button>
+        </form>
+    <hr>
+    </section>
     <div class="container">
         <h2 class="text-center">Recommended for you</h2>
     </div>
@@ -31,8 +39,12 @@
                         </a>
                     </h5>
                     <p class="text-dark">Category: {{ i.primaryCategory.categoryName }}<br>
-                        Price:{{ i.sellingStatus.currentPrice.value }}{{ i.shippingInfo.shippingServiceCost._currencyId }}</p>
+                        Price:{{ i.sellingStatus.currentPrice.value }}{{ i.shippingInfo.shippingServiceCost._currencyId }}<br>
+                        Status: {{ i.sellingStatus.sellingState }}
+                        EndTime: {{ i.listingInfo.endTime }}
+                        </p>
                     <form action="{{ url_for('profile') }}" method="post" autocomplete="off">
+                        <input name="itemID" value="{{ i.itemId }}" style="display: none" id="itemID" ></input>
                         <input type="submit" value="Save" class="btn btn-info"></input>
                     </form>
                 </div>

@@ -201,27 +201,106 @@ def profile():
         api = Connection(config_file='ebay.yaml', siteid="EBAY-GB")
         requests = {
             'categoryId': interestID['categoryID'],
-            'itemFilter': [
-                {'name': 'condition', 'value': 'new'}
-            ],
             'paginationInput': {
-                'entriesPerPage': 10,
+                'entriesPerPage': 20,
                 'pageNumber': 1
             },
-            'sortOrder': 'BestMatch'
+            'listingInfo': {
+                'bestOfferEnabled': 'false',
+                'buyItNowAvailable': 'false'
+            },
+            'sortOrder': 'BestMatch',
+            'itemFilter': [
+                {'name': 'condition', 'value': 'new'},
+                {'name': 'HideDuplicateItems', 'value': 'true'}
+            ]
         }
         response = api.execute('findItemsByCategory', requests)
-        print(response.reply)
+        for i in response.reply.searchResult.item:
+            cursor.execute('INSERT IGNORE INTO items VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', [i.itemId, i.title, 'New', i.sellingStatus.currentPrice.value, i.sellingStatus.currentPrice._currencyId, i.sellingStatus.sellingState, i.listingInfo.endTime, i.galleryURL, i.viewItemURL])
+            mysql.connection.commit()
+            cursor.execute('INSERT IGNORE INTO item_category_junction VALUES (%s, %s)', [i.itemId, interestID['categoryID']])
+            mysql.connection.commit()
+        if request.method == 'POST' and 'itemID' in request.form:
+            itemID = request.form['itemID']
+            if not re.match(r'[0-9]+', itemID):
+                print("wrong")
+                return render_template('profile.html', response=response)
+            else:
+                cursor.execute('INSERT IGNORE INTO favourite VALUES (%s, %s)', [session['id'], itemID])
+                mysql.connection.commit()
+                return redirect(url_for('save'))
         # Show the profile page with account info
         return render_template('profile.html', response=response)
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
-@app.route('/save')
+@app.route('/save', methods=['GET', 'POST'])
 def save():
     if 'loggedin' in session:
-        return render_template('saved.html')
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM items INNER JOIN favourite ON items.itemID = favourite.itemID')
+        product = cursor.fetchall()
+        if request.method == 'POST' and 'itemID' in request.form:
+            itemID = request.form['itemID']
+            if not re.match(r'[0-9]+', itemID):
+                return render_template('saved.html', product=product)
+            else:
+                cursor.execute('DELETE FROM favourite WHERE userID = %s AND itemID = %s', [session['id'], itemID])
+                mysql.connection.commit()
+                return redirect(url_for('save'))
+        return render_template('saved.html', product=product)
     return redirect(url_for('login'))
+
+@app.route('/search_logged', methods=['GET', 'POST'])
+def search_logged():
+    if 'loggedin' in session:
+        msg = ''
+        if request.method == 'POST' and 'search' in request.form:
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            print('flag')
+            search = request.form['search']
+            api = Connection(config_file='ebay.yaml', siteid="EBAY-GB")
+            requests = {
+                'keywords': search,
+                'itemFilter': [
+                    {'name': 'condition', 'value': 'new'}
+                ],
+                'paginationInput': {
+                    'entriesPerPage': 10,
+                    'pageNumber': 1
+                },
+                'sortOrder': 'BestMatch'
+            }
+            response = api.execute('findItemsByKeywords', requests)
+            print(response.reply.ack)
+            if response.reply.ack is 'Failure':
+                msg = 'Please type again'
+                return redirect(url_for('profile'))
+            priceRange = []
+            for i in response.reply.searchResult.item:
+                cursor.execute('INSERT IGNORE INTO items VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                               [i.itemId, i.title, 'New', i.sellingStatus.currentPrice.value,
+                                i.sellingStatus.currentPrice._currencyId, i.sellingStatus.sellingState,
+                                i.listingInfo.endTime, i.galleryURL, i.viewItemURL])
+                priceRange.append(i.sellingStatus.currentPrice.value)
+                mysql.connection.commit()
+            priceRange.sort()
+            priceRange = [float(i) for i in priceRange]
+            print(type(priceRange[0]))
+            return render_template('search_logged.html', response=response, search=search, priceRange=priceRange)
+        if request.method == 'POST' and 'itemID' in request.form:
+            itemID = request.form['itemID']
+            if not re.match(r'[0-9]+', itemID):
+                return redirect(url_for('profile'))
+            else:
+                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor.execute('INSERT IGNORE INTO favourite VALUES (%s, %s)', [session['id'], itemID])
+                mysql.connection.commit()
+                return redirect(url_for('save'))
+        return redirect(url_for('login'))
+    return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
     app.run()

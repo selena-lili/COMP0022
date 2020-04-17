@@ -2,3 +2,42 @@
 {% block title %}
     Ebay Auction Site - Saved Items
 {% endblock %}
+{% block navigation %}
+        <ul class="navbar-nav1">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('modify') }}">Modify Detail</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <h2 class="text-center">Saved Items</h2>
+    </div>
+    {% for i in product %}
+        <div class="container">
+            <div class="row">
+                <img src="{{ i['photoURL'] }}" class="img-responsive col-2" />
+                <div class="col-10">
+                    <h5>
+                        <a href="{{ i['viewURL'] }}">
+                            {{ i['itemName'] }}
+                        </a>
+                    </h5>
+                    <p class="text-dark">
+                        Price:{{ i['highestBid'] }}{{ i['currency'] }}<br>
+                        EndTime: {{ i['AuctionEndTime'] }}</p>
+                    <form action="{{ url_for('save') }}" method="post" autocomplete="off">
+                        <input name="itemID" value="{{ i['itemID'] }}" style="display: none" id="itemID" ></input>
+                        <input type="submit" value="Delete" class="btn btn-info"></input>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'layout.html' %}
+
+{% block title %}Ebay Auction Site - Search{% endblock %}
+
+{% block navigation %}
+        <ul class="navbar-nav1">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('save') }}">Saved Items</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('modify') }}">Modify Detail</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <canvas id="myChart" width="100%"></canvas>
+    </div>
+    {% for i in response.reply.searchResult.item %}
+        <div class="container">
+            <div class="row">
+                <img src="{{ i.galleryURL }}" class="img-fluid col-2" />
+                <div class="col-10">
+                    <h5>
+                        <a href="{{ i.viewItemURL }}">
+                            {{ i.title }}
+                        </a>
+                    </h5>
+                    <p class="text-dark">Category: {{ i.primaryCategory.categoryName }}<br>
+                        Price: {{ i.sellingStatus.currentPrice.value }} {{ i.sellingStatus.currentPrice._currencyId }}<br>
+                        Status: {{ i.sellingStatus.sellingState }}<br>
+                        EndTime: {{ i.listingInfo.endTime }}
+                    </p>
+                    <form action="{{ url_for('search_logged') }}" method="post" autocomplete="off">
+                        <input name="itemID" value="{{ i.itemId }}" style="display: none" id="itemID" ></input>
+                        <input type="submit" value="Save" class="btn btn-info"></input>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+{% block script %}
+    <script>
+        let ctx = document.getElementById('myChart').getContext('2d');
+        let prices = {{ priceRange }};
+        let gap = (prices[prices.length - 1] - prices[0])/5;
+        let group1 = [];
+        let group2 = [];
+        let group3 = [];
+        let group4 = [];
+        let group5 = [];
+        let frequency = [];
+        let labels = [Math.round((prices[0]+gap)*100)/100, Math.round((prices[0]+2*gap)*100)/100, Math.round((prices[0]+3*gap)*100)/100, Math.round((prices[0]+4*gap)*100)/100];
+        for (let i = 0; i < prices.length; i++){
+            if (prices[i] < labels[0]){
+                group1.push(i);
+            }else if(prices[i] < labels[1]){
+                group2.push(i);
+            }else if(prices[i] < labels[2]){
+                group3.push(i);
+            }else if(prices[i] < labels[3]){
+                group4.push(i);
+            }else{
+                group5.push(i);
+            }
+        }
+        frequency = [group1.length, group2.length, group3.length, group4.length, group5.length];
+        console.log(frequency);
+        let myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['x <' + labels[0], labels[0] + '< x <' + labels[1], labels[1] + '< x <' + labels[2], labels[2] + '< x <' + labels[3], labels[3] + '< x '],
+                datasets: [{
+                    label: 'Price Range of {{ search }}',
+                    data: frequency,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)'
+                    ]
+                }]
+            },
+            options: {
+                title:{
+                  display: true,
+                  text:  'Price Range of {{ search }}'
+                },
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+        </script>
+{% endblock %}

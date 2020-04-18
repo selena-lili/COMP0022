@@ -1,0 +1,106 @@
+{% extends 'layout.html' %}
+{% block title %}
+    Ebay Auction Site - Saved Items
+{% endblock %}
+{% block navigation %}
+        <ul class="navbar-nav1">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('save') }}">Saved Items</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <h5 class="text-center">FeedBack of {{ item['itemName'] }}</h5>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-6">
+                <canvas id="myChart" width="100%"></canvas>
+            </div>
+            <div class="col-6">
+                <canvas id="myChart2" width="100%"></canvas>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+        let average = {{ average }};
+        average = Math.round(average*100)/100;
+        let config = {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [
+                        {{ feedback['positiveFeedbackPercent'] }},
+                        {{ 100 - feedback['positiveFeedbackPercent'] }}
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)'
+                    ],
+                    label: 'Seller Feedback'
+                }],
+                labels: [
+                    'Positive FeedBack Percent',
+                    'Negative FeedBack Percent'
+                ]
+            },
+            options: {
+                //responsive: true,
+                title: {
+                    display: true,
+                    text: 'Seller Positive Feedback Percentage'
+                },
+                animation:{
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        };
+        let config2 = {
+            type: 'bar',
+            data: {
+                datasets: [{
+                    data: [
+                        {{ feedback['sellerFeedbackScore'] }},
+                        average
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)'
+                    ],
+                    label: 'Seller Feedback'
+                }],
+                labels: [
+                    "{{ feedback['sellerName'] }}'s Feedback Score",
+                    'Average Feedback Score Among Sellers'
+                ]
+            },
+            options: {
+                //responsive: true,
+                title: {
+                    display: true,
+                    text: 'Seller Feedback Score'
+                },
+                animation:{
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        };
+    window.onload = function(){
+            var ctx = document.getElementById("myChart").getContext("2d");
+            window.myBar = new Chart(ctx, config);
+            var ctx2 = document.getElementById("myChart2").getContext("2d");
+            window.myBar = new Chart(ctx2, config2);
+        }
+    </script>
+{% endblock %}

@@ -6,6 +6,7 @@ from ebaysdk.finding import Connection
 from ebaysdk.trading import Connection as Trading
 from ebaysdk.merchandising import Connection as Merchandising
 from werkzeug.security import generate_password_hash, check_password_hash
+from ebaysdk.shopping import Connection as Shopping
 
 app = Flask(__name__)
 app.secret_key = 'COMP0022'
@@ -66,7 +67,7 @@ def register():
         password = request.form['password']
         email = request.form['email']
         phone = request.form['phone']
-        address = request.form['address']
+        city = request.form['city']
         postcode = request.form['postcode']
         country = request.form['country']
         interest = request.form['interest']
@@ -81,7 +82,7 @@ def register():
             msg = 'Invalid email address!'
         elif not re.match(r'[A-Za-z0-9]+', username):
             msg = 'Username must contain only characters and numbers!'
-        elif not re.match(r'[ A-Za-z0-9]+', address):
+        elif not re.match(r'[ A-Za-z]+', city):
             msg = 'Address must contain only characters and numbers!'
         elif not re.match(r'[A-Za-z0-9]+', postcode):
             msg = 'Postcode must contain only characters and numbers!'
@@ -92,8 +93,10 @@ def register():
         elif not username or not password or not email:
             msg = 'Please fill out the form!'
         else:
+            cursor.execute('INSERT IGNORE INTO address VALUES (%s, %s, %s)', [postcode, city, country])
+            mysql.connection.commit()
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
-            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s)', [username, generate_password_hash(password), email, phone, address, postcode, country, interest])
+            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s, %s, %s)', [username, generate_password_hash(password), email, phone, postcode, interest])
             mysql.connection.commit()
             return redirect(url_for('profile'))
     elif request.method == 'POST':
@@ -129,32 +132,42 @@ def modify():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM accounts WHERE id = %s', [session['id']])
         account = cursor.fetchone()
-        if request.method == 'POST' and 'password' in request.form and 'email' in request.form and 'phone' in request.form and 'address' in request.form and 'postcode' in request.form:
+        cursor.execute('SELECT * FROM address WHERE postcode = %s', [account['postcode']])
+        address = cursor.fetchone()
+        if request.method == 'POST' and 'password' in request.form and 'email' in request.form and 'phone' in request.form:
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
             id = session['id']
             email = request.form['email']
             phone = request.form['phone']
-            address = request.form['address']
-            postcode = request.form['postcode']
-            country = request.form['country']
             password = request.form['password']
             interest = request.form['interest']
             if not re.match(r'[^@]+@[^@]+\.[^@]+', email):
                 msg = 'Invalid email address!'
-            elif not re.match(r'[ A-Za-z0-9]+', address):
+            elif not re.match(r'[0-9]+', phone):
+                msg = 'Phone number must contain only numbers!'
+            else:
+                cursor.execute('UPDATE accounts SET password = %s, email = %s, interest=%s WHERE id = %s', [generate_password_hash(password), email, interest, id])
+                mysql.connection.commit()
+                return redirect(url_for('profile'))
+        if request.method == 'POST' and 'city' in request.form and 'postcode' in request.form and 'country' in request.form:
+            postcode = request.form['postcode']
+            city = request.form['city']
+            country = request.form['country']
+            if not re.match(r'[ A-Za-z0-9]+', city):
                 msg = 'Address must contain only characters and numbers!'
             elif not re.match(r'[A-Za-z0-9]+', postcode):
                 msg = 'Postcode must contain only characters and numbers!'
             elif not re.match(r'[ A-Za-z]+', country):
                 msg = 'Country must contain only characters and numbers!'
-            elif not re.match(r'[0-9]+', phone):
-                msg = 'Phone number must contain only numbers!'
             else:
-                cursor.execute('UPDATE accounts SET password = %s, email = %s, address=%s, postcode=%s, country=%s, interest=%s WHERE id = %s', [generate_password_hash(password), email, address, postcode, country, interest, id])
+                cursor.execute('UPDATE address SET postcode = %s, city = %s, country=%s WHERE postcode = %s',
+                               [postcode, city, country, account['postcode']])
                 mysql.connection.commit()
                 return redirect(url_for('profile'))
         # Show the profile page with account info
-        return render_template('modify.html', account=account, msg=msg)
+        cursor.execute('SELECT categoryName FROM category ORDER BY category.categoryName ASC')
+        category = cursor.fetchall()
+        return render_template('modify.html', account=account, msg=msg, response=category, address=address)
     else:
         redirect(url_for('login'))
 
@@ -198,6 +211,12 @@ def profile():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT categoryID FROM category WHERE categoryName = (SELECT interest FROM accounts WHERE id = %s)', [session['id']])
         interestID = cursor.fetchone()
+        if interestID is None:
+            session.pop('loggedin', None)
+            session.pop('id', None)
+            session.pop('username', None)
+            # Redirect to main page
+            return redirect(url_for('index'))
         api = Connection(config_file='ebay.yaml', siteid="EBAY-GB")
         requests = {
             'categoryId': interestID['categoryID'],
@@ -205,21 +224,23 @@ def profile():
                 'entriesPerPage': 20,
                 'pageNumber': 1
             },
-            'listingInfo': {
-                'bestOfferEnabled': 'false',
-                'buyItNowAvailable': 'false'
-            },
             'sortOrder': 'BestMatch',
             'itemFilter': [
-                {'name': 'condition', 'value': 'new'},
-                {'name': 'HideDuplicateItems', 'value': 'true'}
-            ]
+                {'name': 'HideDuplicateItems', 'value': 'true'},
+                {'name': 'ListingType', 'value': 'Auction'}
+            ],
+            'outputSelector': 'SellerInfo'
         }
-        response = api.execute('findItemsByCategory', requests)
+        response = api.execute('findItemsAdvanced', requests)
+        print(response.reply.searchResult.item)
         for i in response.reply.searchResult.item:
             cursor.execute('INSERT IGNORE INTO items VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', [i.itemId, i.title, 'New', i.sellingStatus.currentPrice.value, i.sellingStatus.currentPrice._currencyId, i.sellingStatus.sellingState, i.listingInfo.endTime, i.galleryURL, i.viewItemURL])
             mysql.connection.commit()
             cursor.execute('INSERT IGNORE INTO item_category_junction VALUES (%s, %s)', [i.itemId, interestID['categoryID']])
+            mysql.connection.commit()
+            cursor.execute('INSERT IGNORE INTO seller VALUES (%s, %s, %s)', [i.sellerInfo.sellerUserName, i.sellerInfo.feedbackScore, i.sellerInfo.positiveFeedbackPercent])
+            mysql.connection.commit()
+            cursor.execute('INSERT IGNORE INTO item_seller VALUES (%s, %s)', [i.itemId, i.sellerInfo.sellerUserName])
             mysql.connection.commit()
         if request.method == 'POST' and 'itemID' in request.form:
             itemID = request.form['itemID']
@@ -270,11 +291,12 @@ def search_logged():
                     'entriesPerPage': 10,
                     'pageNumber': 1
                 },
-                'sortOrder': 'BestMatch'
+                'sortOrder': 'BestMatch',
+                'outputSelector': 'SellerInfo'
             }
             response = api.execute('findItemsByKeywords', requests)
             print(response.reply.ack)
-            if response.reply.ack is 'Failure':
+            if response.reply.ack == 'Failure':
                 msg = 'Please type again'
                 return redirect(url_for('profile'))
             priceRange = []
@@ -285,9 +307,15 @@ def search_logged():
                                 i.listingInfo.endTime, i.galleryURL, i.viewItemURL])
                 priceRange.append(i.sellingStatus.currentPrice.value)
                 mysql.connection.commit()
+                cursor.execute('INSERT IGNORE INTO seller VALUES (%s, %s, %s)',
+                               [i.sellerInfo.sellerUserName, i.sellerInfo.feedbackScore,
+                                i.sellerInfo.positiveFeedbackPercent])
+                mysql.connection.commit()
+                cursor.execute('INSERT IGNORE INTO item_seller VALUES (%s, %s)',
+                               [i.itemId, i.sellerInfo.sellerUserName])
+                mysql.connection.commit()
             priceRange.sort()
             priceRange = [float(i) for i in priceRange]
-            print(type(priceRange[0]))
             return render_template('search_logged.html', response=response, search=search, priceRange=priceRange)
         if request.method == 'POST' and 'itemID' in request.form:
             itemID = request.form['itemID']
@@ -299,6 +327,25 @@ def search_logged():
                 mysql.connection.commit()
                 return redirect(url_for('save'))
         return redirect(url_for('login'))
+    return redirect(url_for('login'))
+
+@app.route('/feedback', methods=['GET', 'POST'])
+def feedback():
+    if 'loggedin' in session:
+        if 'itemID1' in request.form:
+            itemID = request.form['itemID1']
+            print(type(itemID))
+            print(itemID)
+            msg = ''
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT * FROM seller WHERE sellerName = (SELECT sellerID FROM item_seller WHERE itemID = %s)', [itemID])
+            feedback = cursor.fetchone()
+            cursor.execute('SELECT AVG(`sellerFeedbackScore`) FROM `seller`')
+            average = cursor.fetchone()
+            print(average['AVG(`sellerFeedbackScore`)'])
+            cursor.execute('SELECT * FROM items WHERE itemID = %s', [itemID])
+            item = cursor.fetchone()
+            return render_template('feedback.html', feedback=feedback, item=item, average=float(average['AVG(`sellerFeedbackScore`)']))
     return redirect(url_for('login'))
 
 

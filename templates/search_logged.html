@@ -37,10 +37,14 @@
                         Status: {{ i.sellingStatus.sellingState }}<br>
                         EndTime: {{ i.listingInfo.endTime }}
                     </p>
-                    <form action="{{ url_for('search_logged') }}" method="post" autocomplete="off">
-                        <input name="itemID" value="{{ i.itemId }}" style="display: none" id="itemID" ></input>
-                        <input type="submit" value="Save" class="btn btn-info"></input>
-                    </form>
+                    <div class="container">
+                        <div class="row">
+                            <form action="{{ url_for('search_logged') }}" method="post" autocomplete="off">
+                                <input name="itemID" value="{{ i.itemId }}" style="display: none" id="itemID" ></input>
+                                <input type="submit" value="Save" class="btn btn-info"></input>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

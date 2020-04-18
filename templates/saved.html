@@ -32,10 +32,16 @@
                     <p class="text-dark">
                         Price:{{ i['highestBid'] }}{{ i['currency'] }}<br>
                         EndTime: {{ i['AuctionEndTime'] }}</p>
-                    <form action="{{ url_for('save') }}" method="post" autocomplete="off">
-                        <input name="itemID" value="{{ i['itemID'] }}" style="display: none" id="itemID" ></input>
-                        <input type="submit" value="Delete" class="btn btn-info"></input>
-                    </form>
+                    <div class="row">
+                        <form action="{{ url_for('save') }}" method="post" autocomplete="off" style="margin-right: 1rem">
+                            <input name="itemID" value="{{ i['itemID'] }}" style="display: none" id="itemID" ></input>
+                            <input type="submit" value="Delete" class="btn btn-info"></input>
+                        </form>
+                        <form action="{{ url_for('feedback') }}" method="post" autocomplete="off">
+                            <input name="itemID1" value="{{ i['itemID'] }}" style="display: none" id="itemID1" ></input>
+                            <input type="submit" value="View FeedBack" class="btn btn-info"></input>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

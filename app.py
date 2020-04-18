@@ -14,7 +14,7 @@ app.secret_key = 'COMP0022'
 app.config['MYSQL_HOST'] = 'comp002205.mysql.database.azure.com'
 app.config['MYSQL_USER'] = 'comp002205@comp002205'
 app.config['MYSQL_PASSWORD'] = 'Comp0022'
-app.config['MYSQL_DB'] = 'COMP0022'
+app.config['MYSQL_DB'] = 'comp0022'
 
 # Intialize MySQL
 mysql = MySQL(app)

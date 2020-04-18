@@ -11,9 +11,9 @@ from ebaysdk.shopping import Connection as Shopping
 app = Flask(__name__)
 app.secret_key = 'COMP0022'
 # Enter your database connection details below
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'test'
-app.config['MYSQL_PASSWORD'] = 'test'
+app.config['MYSQL_HOST'] = 'comp002205.mysql.database.azure.com'
+app.config['MYSQL_USER'] = 'comp002205@comp002205'
+app.config['MYSQL_PASSWORD'] = 'Comp0022'
 app.config['MYSQL_DB'] = 'COMP0022'
 
 # Intialize MySQL

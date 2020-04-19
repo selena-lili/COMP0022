@@ -16,4 +16,3 @@ requests==2.23.0
 six==1.10.0
 urllib3==1.25.9
 Werkzeug==1.0.1
-xkit==0.0.0

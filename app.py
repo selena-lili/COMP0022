@@ -6,7 +6,6 @@ from ebaysdk.finding import Connection
 from ebaysdk.trading import Connection as Trading
 from ebaysdk.merchandising import Connection as Merchandising
 from werkzeug.security import generate_password_hash, check_password_hash
-from ebaysdk.shopping import Connection as Shopping
 
 app = Flask(__name__)
 app.secret_key = 'COMP0022'
@@ -19,6 +18,7 @@ app.config['MYSQL_DB'] = 'comp0022'
 # Intialize MySQL
 mysql = MySQL(app)
 
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 def index():
@@ -29,6 +29,7 @@ def index():
         api = Merchandising(config_file='ebay.yaml', siteid="EBAY-GB")
         response = api.execute('getMostWatchedItems')
         return render_template('index.html', response=response)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -55,6 +56,7 @@ def login():
             msg = 'Incorrect username/password!'
     # Show the login form with message (if any)
     return render_template('login.html', msg=msg)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -96,7 +98,8 @@ def register():
             cursor.execute('INSERT IGNORE INTO address VALUES (%s, %s, %s)', [postcode, city, country])
             mysql.connection.commit()
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
-            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s, %s, %s)', [username, generate_password_hash(password), email, phone, postcode, interest])
+            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s, %s, %s)',
+                           [username, generate_password_hash(password), email, phone, postcode, interest])
             mysql.connection.commit()
             return redirect(url_for('profile'))
     elif request.method == 'POST':
@@ -114,7 +117,7 @@ def register():
         }
         response = api.execute('GetCategories', callData)
         for i in response.reply.CategoryArray.Category:
-            cursor.execute('INSERT INTO category VALUES (%s, %s)',[i.CategoryID, i.CategoryName])
+            cursor.execute('INSERT INTO category VALUES (%s, %s)', [i.CategoryID, i.CategoryName])
         mysql.connection.commit()
         cursor.execute('SELECT categoryName FROM category ORDER BY category.categoryName ASC')
         category = cursor.fetchall()
@@ -123,6 +126,7 @@ def register():
         cursor.execute('SELECT categoryName FROM category ORDER BY category.categoryName ASC')
         category = cursor.fetchall()
         return render_template('register.html', msg=msg, response=category)
+
 
 @app.route('/modify', methods=['GET', 'POST'])
 def modify():
@@ -146,7 +150,8 @@ def modify():
             elif not re.match(r'[0-9]+', phone):
                 msg = 'Phone number must contain only numbers!'
             else:
-                cursor.execute('UPDATE accounts SET password = %s, email = %s, interest=%s WHERE id = %s', [generate_password_hash(password), email, interest, id])
+                cursor.execute('UPDATE accounts SET password = %s, email = %s, interest=%s WHERE id = %s',
+                               [generate_password_hash(password), email, interest, id])
                 mysql.connection.commit()
                 return redirect(url_for('profile'))
         if request.method == 'POST' and 'city' in request.form and 'postcode' in request.form and 'country' in request.form:
@@ -175,11 +180,12 @@ def modify():
 @app.route('/logout')
 def logout():
     # Remove session data, this will log the user out
-   session.pop('loggedin', None)
-   session.pop('id', None)
-   session.pop('username', None)
-   # Redirect to main page
-   return redirect(url_for('index'))
+    session.pop('loggedin', None)
+    session.pop('id', None)
+    session.pop('username', None)
+    # Redirect to main page
+    return redirect(url_for('index'))
+
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
@@ -203,13 +209,16 @@ def search():
     else:
         return redirect(url_for('index'))
 
+
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     # Check if user is loggedin
     if 'loggedin' in session:
         # We need all the account info for the user so we can display it on the profile page
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT categoryID FROM category WHERE categoryName = (SELECT interest FROM accounts WHERE id = %s)', [session['id']])
+        cursor.execute(
+            'SELECT categoryID FROM category WHERE categoryName = (SELECT interest FROM accounts WHERE id = %s)',
+            [session['id']])
         interestID = cursor.fetchone()
         if interestID is None:
             session.pop('loggedin', None)
@@ -234,11 +243,17 @@ def profile():
         response = api.execute('findItemsAdvanced', requests)
         print(response.reply.searchResult.item)
         for i in response.reply.searchResult.item:
-            cursor.execute('INSERT IGNORE INTO items VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', [i.itemId, i.title, 'New', i.sellingStatus.currentPrice.value, i.sellingStatus.currentPrice._currencyId, i.sellingStatus.sellingState, i.listingInfo.endTime, i.galleryURL, i.viewItemURL])
+            cursor.execute('INSERT IGNORE INTO items VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                           [i.itemId, i.title, 'New', i.sellingStatus.currentPrice.value,
+                            i.sellingStatus.currentPrice._currencyId, i.sellingStatus.sellingState,
+                            i.listingInfo.endTime, i.galleryURL, i.viewItemURL])
             mysql.connection.commit()
-            cursor.execute('INSERT IGNORE INTO item_category_junction VALUES (%s, %s)', [i.itemId, interestID['categoryID']])
+            cursor.execute('INSERT IGNORE INTO item_category_junction VALUES (%s, %s)',
+                           [i.itemId, interestID['categoryID']])
             mysql.connection.commit()
-            cursor.execute('INSERT IGNORE INTO seller VALUES (%s, %s, %s)', [i.sellerInfo.sellerUserName, i.sellerInfo.feedbackScore, i.sellerInfo.positiveFeedbackPercent])
+            cursor.execute('INSERT IGNORE INTO seller VALUES (%s, %s, %s)',
+                           [i.sellerInfo.sellerUserName, i.sellerInfo.feedbackScore,
+                            i.sellerInfo.positiveFeedbackPercent])
             mysql.connection.commit()
             cursor.execute('INSERT IGNORE INTO item_seller VALUES (%s, %s)', [i.itemId, i.sellerInfo.sellerUserName])
             mysql.connection.commit()
@@ -256,6 +271,7 @@ def profile():
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
+
 @app.route('/save', methods=['GET', 'POST'])
 def save():
     if 'loggedin' in session:
@@ -272,6 +288,7 @@ def save():
                 return redirect(url_for('save'))
         return render_template('saved.html', product=product)
     return redirect(url_for('login'))
+
 
 @app.route('/search_logged', methods=['GET', 'POST'])
 def search_logged():
@@ -329,6 +346,7 @@ def search_logged():
         return redirect(url_for('login'))
     return redirect(url_for('login'))
 
+
 @app.route('/feedback', methods=['GET', 'POST'])
 def feedback():
     if 'loggedin' in session:
@@ -338,14 +356,17 @@ def feedback():
             print(itemID)
             msg = ''
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('SELECT * FROM seller WHERE sellerName = (SELECT sellerID FROM item_seller WHERE itemID = %s)', [itemID])
+            cursor.execute(
+                'SELECT * FROM seller WHERE sellerName = (SELECT sellerID FROM item_seller WHERE itemID = %s)',
+                [itemID])
             feedback = cursor.fetchone()
             cursor.execute('SELECT AVG(`sellerFeedbackScore`) FROM `seller`')
             average = cursor.fetchone()
             print(average['AVG(`sellerFeedbackScore`)'])
             cursor.execute('SELECT * FROM items WHERE itemID = %s', [itemID])
             item = cursor.fetchone()
-            return render_template('feedback.html', feedback=feedback, item=item, average=float(average['AVG(`sellerFeedbackScore`)']))
+            return render_template('feedback.html', feedback=feedback, item=item,
+                                   average=float(average['AVG(`sellerFeedbackScore`)']))
     return redirect(url_for('login'))
 
 
